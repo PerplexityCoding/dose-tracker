@@ -10,6 +10,8 @@
   "author": "Hugues",
   "license": "ISC",
   "dependencies": {
+    "bent": "^7.3.12",
+    "open": "^8.1.0",
     "puppeteer": "^9.1.1"
   }
 }
