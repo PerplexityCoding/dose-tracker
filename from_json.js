@@ -1,5 +1,5 @@
 const bent = require('bent');
-const centerIds = [ 4422387, 4869765, 4790726, 4789625, 4792051 ];
+const centerIds = [ 5953378, 5879004, 6105840, 6107267, 6106603 ];
 const getJSON = bent('json');
 const open = require('open');
 
@@ -40,12 +40,22 @@ async function getDoses() {
         const url = doctoUrl(centerId);
         const data = await getJSON(url);
 
-        if (data && data.reason != 'no_availabilities') {
-            console.log(data);
-            doses.push(data.search_result);
+        if (data) {
+			if (data.reason != 'no_availabilities') {
+			    console.log(data);
+				doses.push(data.search_result);
+			}
+			
+			console.log(data)
+			
+			if (!data.search_result) {
+				console.error(`${centerId} not working`);
+			} else {
+				console.log(data.search_result.city);
+			}
         }
 
-        await waitFor(1000);
+        await waitFor(500);
     }
     return doses;
 }

@@ -7,18 +7,22 @@ const URL = process.argv[2] || 'https://www.doctolib.fr/vaccination-covid-19/van
 
 console.log(`URL: ${URL}`);
 
-run();
+let browser = null;
+
+main();
+
+async function main() {
+  browser = await puppeteer.launch({
+    headless: false,
+  });
+  
+  run();
+}
 
 async function run(cpt = 1) {
   console.log(`checking ${cpt} ...`);
   try {
-    const list = await getDoses();
-    if (list.length > 0) {
-      console.log('\x07', list.map(item => `${item.name}\n${item.url}`).join('\n'));
-      list.forEach((item) => {
-        open(item.url);
-      });
-    }
+    await getDoses();
   } catch (e) {
     console.error(e);
   } finally {
@@ -35,10 +39,9 @@ function waitFor(to) {
 }
 
 async function getDoses() {
-  const browser = await puppeteer.launch();
   const page = await browser.newPage();
   await page.setCacheEnabled(false);
-  await page.setViewport({ width: 1600, height: 5000 });
+  await page.setViewport({ width: 1800, height: 900 });
   await page.goto(URL, { waitUntil: 'networkidle0' });
 
   await page.evaluate(() => new Promise((resolve) => {
@@ -49,16 +52,16 @@ async function getDoses() {
         scrollTop = document.documentElement.scrollTop;
         return;
       }
-      window.scrollTo(0, 0);
+      // window.scrollTo(0, 0);
       clearInterval(interval);
       resolve();
-    }, 50);
+    }, 100);
   }));
   await waitFor(4000);
 
   const list = await page.evaluate(() => {
     const blacklist = ['Saint-Mandé'];
-    const whitelist = ['Porte de Versailles', 'Paris 14', 'Paris 15', 'Malakoff', 'Issy', 'Pasteur', 'Montrouge', 'Dunant'];
+    const whitelist = ['Porte de Versailles', '7eme', 'Mairie du 6', 'Paris 14', 'Paris 15', 'Malakoff', 'Issy', 'Pasteur', 'Montrouge', 'Dunant'];
     return Array.from(document.querySelectorAll('.dl-search-result'))
       .filter(element => !element.innerHTML.includes('Aucun rendez-vous'))
       .filter(element => !blacklist.some((e) => element.innerHTML.includes(e)))
@@ -69,8 +72,16 @@ async function getDoses() {
 
   if (list.length > 0) {
     await page.screenshot({ path: 'screen_found.png' });
+	console.log('\x07', list.map(item => `${item.name}\n${item.url}`).join('\n'));
+	
+	list.forEach(async (item) => {
+      await page.goto(item.url, { waitUntil: 'networkidle0' });
+	  open(item.url);
+    });
+	
+	await waitFor(600000);
   }
 
-  await browser.close();
+  await page.close();
   return list;
 }
